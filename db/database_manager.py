@@ -1,11 +1,12 @@
 import sqlite3
+from datetime import date
 from enum import Enum
 
 class UserType(Enum):
     HEAD_OF_DEPARTMENT = "HEAD_OF_DEPARTMENT"
     DEAN = "DEAN"
     ZJK_MEMBER = "Członek Zespołu Jakości Kształcenia"
-    INSPECTION_TEAM_MEMBER = "INSPECTION_TEAM_MEMBER"
+    INSPECTION_TEAM_MEMBER = "Członek Zespołu Hospitującego"
     INSPECTED = "Hospitowany"
 
 class DatabaseManager:
@@ -78,16 +79,16 @@ class DatabaseManager:
 
         -- Tabla: Protokół hospitacji
         CREATE TABLE IF NOT EXISTS Protokol_hospitacji (
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            HospitacjaID INTEGER,
-            Zespol_hospitujacyID INTEGER,
-            Ocena_koncowa FLOAT,
-            Data_utworzenia DATE,
-            Sciezka_do_pliku VARCHAR(255),
-            Raport_z_hospitacjiID INTEGER,
-            FOREIGN KEY (HospitacjaID) REFERENCES Hospitacja(ID),
-            FOREIGN KEY (Zespol_hospitujacyID) REFERENCES Zespol_hospitujacy(ID),
-            FOREIGN KEY (Raport_z_hospitacjiID) REFERENCES Raport_z_hospitacji(ID)
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hospitacja_id INTEGER,
+            zespol_hospitujacy_id INTEGER,
+            ocena_koncowa FLOAT,
+            data_utworzenia DATE,
+            sciezka_do_pliku VARCHAR(255),
+            raport_z_hospitacji_id INTEGER,
+            FOREIGN KEY (hospitacja_id) REFERENCES Hospitacja(ID),
+            FOREIGN KEY (zespol_hospitujacy_id) REFERENCES Zespol_hospitujacy(id),
+            FOREIGN KEY (raport_z_hospitacji_id) REFERENCES Raport_z_hospitacji(id)
         );
 
         -- Tabla: Raport z hospitacji
@@ -123,11 +124,11 @@ class DatabaseManager:
 
         -- Tabla: Wykaz osób proponowanych do hospitacji Pracownik uczelni
         CREATE TABLE IF NOT EXISTS Wykaz_osob_proponowanych_Pracownik_uczelni (
-            Wykaz_osob_proponowanych_do_hospitacjiID INTEGER,
-            Pracownik_uczelniID INTEGER,
-            PRIMARY KEY (Wykaz_osob_proponowanych_do_hospitacjiID, Pracownik_uczelniID),
-            FOREIGN KEY (Wykaz_osob_proponowanych_do_hospitacjiID) REFERENCES Wykaz_osob_proponowanych_do_hospitacji(ID),
-            FOREIGN KEY (Pracownik_uczelniID) REFERENCES Pracownik_uczelni(ID)
+            wykaz_osob_proponowanych_do_hospitacji_id INTEGER,
+            pracownik_uczelni_id INTEGER,
+            PRIMARY KEY (wykaz_osob_proponowanych_do_hospitacji_id, pracownik_uczelni_id),
+            FOREIGN KEY (wykaz_osob_proponowanych_do_hospitacji_id) REFERENCES wykaz_osob_proponowanych_do_hospitacji_id(id),
+            FOREIGN KEY (pracownik_uczelni_id) REFERENCES Pracownik_uczelni(id)
         );
 
         -- Tabela: Użytkownicy
@@ -184,6 +185,34 @@ class DatabaseManager:
             VALUES (?, ?, ?)
         """, users)
 
+        cursor.execute("INSERT OR IGNORE INTO Ramowy_harmonogram_hospitacji (id, zatwierdzony) VALUES (1, 1)")
+
+        cursor.execute("INSERT OR IGNORE INTO Zespol_hospitujacy (id) VALUES (1)")
+
+        team_members = [(2, 1), (3, 1)]
+        cursor.executemany("""
+            INSERT OR IGNORE INTO Pracownik_uczelni_Zespol_hospitujacy (pracownik_uczelni_id, zespol_hospitujacy_id) 
+            VALUES (?, ?)
+        """, team_members)
+
+        cursor.execute("""
+            INSERT OR IGNORE INTO Hospitacja (zespol_hospitujacy_id, pracownik_uczelni_id, ramowy_harmonogram_hospitacji_id, termin_hospitacji) 
+            VALUES (1, 1, 1, ?)
+        """, (date.today(),))
+
+        cursor.execute(
+            "INSERT OR IGNORE INTO Semestr (rok, ktora_polowa, nazwa_semestru) VALUES (2024, 1, 'Semestr letni')")
+
+        cursor.execute("""
+            INSERT OR IGNORE INTO Raport_z_hospitacji (semestr_id, sciezka_do_pliku) 
+            VALUES (1, 'reports/raport1.txt')
+        """)
+
+        cursor.execute("""
+            INSERT OR IGNORE INTO Protokol_hospitacji (hospitacja_id, zespol_hospitujacy_id, ocena_koncowa, data_utworzenia, sciezka_do_pliku, raport_z_hospitacji_id)
+            VALUES (1, 1, 4.5, ?, 'protocols/protokol1.txt', 1)
+        """, (date.today(),))
+
         connection.commit()
         connection.close()
 
@@ -196,26 +225,121 @@ class DatabaseManager:
 
         connection.close()
 
-        return self.get_user_role() if self.logged_user is not None else None
+        if self.logged_user is not None:
+            self.logged_user = self.logged_user[0]
+            return self.get_user_role()
+        else: return None
 
     def get_user_role(self):
         connection = sqlite3.connect(self.DATABASE_NAME)
         cursor = connection.cursor()
 
-        cursor.execute("SELECT stanowisko FROM Pracownik_uczelni WHERE id=?", self.logged_user)
+        cursor.execute("SELECT stanowisko FROM Pracownik_uczelni WHERE id=?", (self.logged_user,))
         role = cursor.fetchone()[0]
 
         connection.close()
 
         return role
 
-    def get_user_fullname(self):
+    def get_employee_id_from_hospitalization(self, hospitalization_id):
         connection = sqlite3.connect(self.DATABASE_NAME)
         cursor = connection.cursor()
 
-        cursor.execute("SELECT imie, nazwisko FROM Pracownik_uczelni WHERE id=?", self.logged_user)
+        cursor.execute("SELECT pracownik_uczelni_id FROM Hospitacja WHERE id=?", (hospitalization_id, ))
+        employee_id = cursor.fetchone()
+
+        connection.close()
+        return employee_id[0]
+
+    def get_fullname(self, employee_id):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT imie, nazwisko FROM Pracownik_uczelni WHERE id=?", (employee_id,))
         fullname = cursor.fetchone()
 
         connection.close()
-
         return ' '.join(fullname)
+
+    def get_employee_full_name(self, protocol_id):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        query = """
+            SELECT pu.Imie || ' ' || pu.Nazwisko AS Full_Name
+            FROM Protokol_hospitacji ph
+            JOIN Hospitacja h ON ph.hospitacja_id = h.ID
+            JOIN Pracownik_uczelni pu ON h.Pracownik_uczelni_id = pu.ID
+            WHERE ph.ID = ?;
+        """
+
+        cursor.execute(query, (protocol_id,))
+        result = cursor.fetchone()
+        connection.close()
+
+        return result[0] if result else None
+
+    def get_all_protocols(self, employee_id):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        query = """
+            SELECT ph.ID AS Protocol_ID, 
+                   ph.hospitacja_id, 
+                   ph.Zespol_hospitujacy_id, 
+                   ph.Ocena_koncowa, 
+                   ph.Data_utworzenia, 
+                   ph.Sciezka_do_pliku, 
+                   ph.Raport_z_hospitacji_ID
+            FROM Protokol_hospitacji ph
+            JOIN Hospitacja h ON ph.Hospitacja_ID = h.ID
+            JOIN Zespol_hospitujacy zh ON ph.Zespol_hospitujacy_ID = zh.ID
+            JOIN Pracownik_uczelni_Zespol_hospitujacy puzh 
+                ON zh.ID = puzh.Zespol_hospitujacy_ID
+            WHERE puzh.Pracownik_uczelni_ID = ?;
+        """
+
+        cursor.execute(query, (employee_id,))
+        results = cursor.fetchall()
+        connection.close()
+
+        return results
+
+    def get_protocols(self, employee_id):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        cursor.execute("""SELECT 
+            Protokol_hospitacji.id,
+            Protokol_hospitacji.hospitacja_id,
+            Protokol_hospitacji.zespol_hospitujacy_id,
+            Protokol_hospitacji.ocena_koncowa,
+            Protokol_hospitacji.data_utworzenia,
+            Protokol_hospitacji.sciezka_do_pliku,
+            Protokol_hospitacji.raport_z_hospitacji_id
+            FROM Protokol_hospitacji 
+            JOIN Hospitacja ON Protokol_hospitacji.hospitacja_id = Hospitacja.id
+            WHERE pracownik_uczelni_id = ?;
+        """, (employee_id,))
+
+        protocols = cursor.fetchall()
+
+        connection.close()
+        return protocols
+
+    def get_semester_name(self, report_id):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        print(type(report_id), report_id)
+        cursor.execute("""
+            SELECT Semestr.nazwa_semestru
+            FROM Raport_z_hospitacji
+            JOIN Semestr ON Raport_z_hospitacji.semestr_id = Semestr.id
+            WHERE Raport_z_hospitacji.id = ?;
+        """, (report_id, ))
+
+        semester_name = cursor.fetchone()
+
+        connection.close()
+        return semester_name[0]
