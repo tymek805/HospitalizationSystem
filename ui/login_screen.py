@@ -1,8 +1,8 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QScreen
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout,
-    QLineEdit, QMessageBox, QDialog
+    QLineEdit, QMessageBox, QDialog, QApplication
 )
 
 from ui.main_screen import MainWindow
@@ -16,6 +16,8 @@ class LoginDialog(QDialog):
         self.setWindowTitle("Login System")
         self.setGeometry(100, 100, 400, 300)
         self.init_ui()
+
+        self.center()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -54,11 +56,12 @@ class LoginDialog(QDialog):
 
         user = self.database_manager.login(username, password)
         if user:
-            self.open_dashboard(user)
+            self.accept()
         else:
             QMessageBox.critical(self, "Błąd", "Nieprawidłowe dane logowania.")
 
-    def open_dashboard(self, user):
-        self.dashboard = MainWindow(self.database_manager, user)
-        self.dashboard.show()
-        self.accept()
+    def center(self):
+        frame_geometry = self.frameGeometry()
+        screen_center = QApplication.primaryScreen().availableGeometry().center()
+        frame_geometry.moveCenter(screen_center)
+        self.move(frame_geometry.topLeft())

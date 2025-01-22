@@ -2,11 +2,11 @@ import sqlite3
 from enum import Enum
 
 class UserType(Enum):
-    HEAD_OF_DEPARTMENT = "HEAD_OF_DEPARTMENT",
-    DEAN = "DEAN",
-    ZJK_MEMBER = "ZJK_MEMBER",
-    INSPECTION_TEAM_MEMBER = "INSPECTION_TEAM_MEMBER",
-    INSPECTED = "INSPECTED"
+    HEAD_OF_DEPARTMENT = "HEAD_OF_DEPARTMENT"
+    DEAN = "DEAN"
+    ZJK_MEMBER = "Członek Zespołu Jakości Kształcenia"
+    INSPECTION_TEAM_MEMBER = "INSPECTION_TEAM_MEMBER"
+    INSPECTED = "Hospitowany"
 
 class DatabaseManager:
     DATABASE_NAME = "pwr.db"
@@ -136,7 +136,7 @@ class DatabaseManager:
             pracownik_uczelni_id INTEGER NOT NULL,
             username VARCHAR(255) UNIQUE NOT NULL,
             password VARCHAR(255) NOT NULL,
-            FOREIGN KEY (Pracownik_uczelniID) REFERENCES Pracownik_uczelni(id)
+            FOREIGN KEY (pracownik_uczelni_id) REFERENCES Pracownik_uczelni(id)
         );
         ''')
 
@@ -156,15 +156,15 @@ class DatabaseManager:
 
         # Pracownicy
         employees = [
-            (katedra_id, "2024-01-15", 365, "Asystent", "Jan", "Kowalski", "12345678901", "jan.kowalski@example.com",
+            (katedra_id, "2024-01-15", 365, UserType.INSPECTED.name, "Jan", "Kowalski", "12345678901", "jan.kowalski@example.com",
              "27092606378", "M", "Żeromskiego 1"),
-            (katedra_id, "2023-11-20", 400, "Profesor", "Anna", "Nowak", "98765432109", "anna.nowak@example.com",
+            (katedra_id, "2023-11-20", 400, UserType.INSPECTION_TEAM_MEMBER.name, "Anna", "Nowak", "98765432109", "anna.nowak@example.com",
              "55041509281", "K", "1 Maja 10"),
-            (katedra_id, "2024-05-10", 150, "Adiunkt", "Piotr", "Zieliński", "63041773698",
+            (katedra_id, "2024-05-10", 150, UserType.ZJK_MEMBER.name, "Piotr", "Zieliński", "63041773698",
              "piotr.zielinski@example.com", "555666777", "M", "Czwartaków 3"),
-            (katedra_id, "2024-02-05", 300, "Doktor", "Maria", "Wiśniewska", "86100808117",
+            (katedra_id, "2024-02-05", 300, UserType.DEAN.name, "Maria", "Wiśniewska", "86100808117",
              "maria.wisniewska@example.com", "444555666", "K", "Morcinka 4"),
-            (katedra_id, "2022-09-15", 700, "Rektor", "Tomasz", "Lewandowski", "77788899900",
+            (katedra_id, "2022-09-15", 700, UserType.HEAD_OF_DEPARTMENT.name, "Tomasz", "Lewandowski", "77788899900",
              "tomasz.lewandowski@example.com", "222333444", "M", "Kasprzaka Marcina 5"),
         ]
 
@@ -174,24 +174,15 @@ class DatabaseManager:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, employees)
 
-        connection.commit()
-        connection.close()
+        cursor.execute("SELECT ID FROM Pracownik_uczelni")
+        employees_id = cursor.fetchall()
 
-    def initialize_users(self):
-        connection = sqlite3.connect(self.DATABASE_NAME)
-        cursor = connection.cursor()
+        users = [(employees_id[i][0], f"user{i + 1}", f"password{i + 1}") for i in range(len(UserType))]
 
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                role TEXT NOT NULL
-            )
-        """)
-
-        for i, user in enumerate(UserType):
-            cursor.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)", (f"user{i + 1}", f"user{i + 1}", user.name))
+        cursor.executemany("""
+            INSERT OR IGNORE INTO Users (pracownik_uczelni_id, username, password) 
+            VALUES (?, ?, ?)
+        """, users)
 
         connection.commit()
         connection.close()
@@ -200,8 +191,31 @@ class DatabaseManager:
         connection = sqlite3.connect(self.DATABASE_NAME)
         cursor = connection.cursor()
 
-        cursor.execute("SELECT role FROM users WHERE username=? AND password=?", (username, password))
-        user = cursor.fetchone()
+        cursor.execute("SELECT pracownik_uczelni_id FROM Users WHERE username=? AND password=?", (username, password))
+        self.logged_user = cursor.fetchone()
 
         connection.close()
-        return user
+
+        return self.get_user_role() if self.logged_user is not None else None
+
+    def get_user_role(self):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT stanowisko FROM Pracownik_uczelni WHERE id=?", self.logged_user)
+        role = cursor.fetchone()[0]
+
+        connection.close()
+
+        return role
+
+    def get_user_fullname(self):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT imie, nazwisko FROM Pracownik_uczelni WHERE id=?", self.logged_user)
+        fullname = cursor.fetchone()
+
+        connection.close()
+
+        return ' '.join(fullname)
