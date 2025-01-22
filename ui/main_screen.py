@@ -2,10 +2,11 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout,
-    QHBoxLayout, QFrame, QApplication
+    QHBoxLayout, QFrame, QApplication, QSpacerItem, QSizePolicy
 )
 
 from db.database_manager import UserType
+from ui.protocols_screen import protocols_screen_1
 
 
 class MainWindow(QWidget):
@@ -22,19 +23,12 @@ class MainWindow(QWidget):
 
     def init_ui(self):
         main_layout = QVBoxLayout()
-
-        # Content section
         content_frame = QFrame()
-        content_layout = QVBoxLayout()
+        self.content_layout = QVBoxLayout()
+        content_frame.setLayout(self.content_layout)
 
-        actions_label = QLabel("Dostępne akcje:")
-        actions_label.setFont(QFont("Arial", 14))
-        content_layout.addWidget(actions_label, alignment=Qt.AlignmentFlag.AlignLeft)
-        self.add_actions(content_layout)
-        content_layout.setSpacing(20)
-        content_frame.setLayout(content_layout)
+        self.main_screen()
 
-        # Add widgets to the main layout
         main_layout.addLayout(self.header_layout())
         h_line = QFrame()
         h_line.setFrameShape(QFrame.Shape.HLine)
@@ -42,8 +36,32 @@ class MainWindow(QWidget):
         main_layout.addWidget(h_line)
         main_layout.addWidget(content_frame)
         main_layout.addStretch()
-
         self.setLayout(main_layout)
+
+    def main_screen(self):
+        self.clear_content()
+
+        actions_label = QLabel("Dostępne akcje:")
+        actions_label.setFont(QFont("Arial", 14))
+        self.content_layout.addWidget(actions_label, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.add_actions()
+        self.content_layout.setSpacing(20)
+
+    def protocols_screen_1(self):
+        self.clear_content()
+        container = QWidget()
+        container_layout = QHBoxLayout()
+
+        actions_label = QLabel("Dostępne protokoły:")
+        actions_label.setFont(QFont("Arial", 14))
+        spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        back_button = QPushButton("Powrót")
+        back_button.clicked.connect(self.main_screen)
+        container_layout.addWidget(actions_label)
+        container_layout.addSpacerItem(spacer)
+        container_layout.addWidget(back_button)
+        container.setLayout(container_layout)
+        self.content_layout.addWidget(container)
 
     def header_layout(self):
         layout = QHBoxLayout()
@@ -68,21 +86,28 @@ class MainWindow(QWidget):
         layout.setContentsMargins(5, 10, 5, 10)
         return layout
 
-    def add_actions(self, layout):
+    def add_actions(self):
         if self.user_role == UserType.INSPECTED:
-            self.action_button("Protokoły hospitacji", layout)
+            self.action_button("Protokoły hospitacji", self.protocols_screen_1)
         elif self.user_role == UserType.INSPECTION_TEAM_MEMBER:
-            self.action_button("Protokoły hospitacji", layout)
-        elif self.user_role == UserType.ZJK_MEMBER:
-            self.action_button("Zarządzanie wykazem osób proponowanych do hospitacji", layout)
+            self.action_button("Protokoły hospitacji", self.protocols_screen_1)
+        # elif self.user_role == UserType.ZJK_MEMBER:
+        #     self.action_button("Zarządzanie wykazem osób proponowanych do hospitacji", layout)
         else:
             print("No action found for this UserType")
 
 
-    def action_button(self, text, layout):
+    def action_button(self, text, content):
         button = QPushButton(text)
-        button.setStyleSheet("border: 1px solid black; padding: 10px;")
-        layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignLeft)
+        button.setStyleSheet("padding: 10px;")
+        button.clicked.connect(content)
+        self.content_layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignLeft)
+
+    def clear_content(self):
+        for i in reversed(range(self.content_layout.count())):
+            widget = self.content_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
 
     def center(self):
         frame_geometry = self.frameGeometry()
