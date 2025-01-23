@@ -1,3 +1,5 @@
+from PyQt6.QtWidgets import QSpacerItem
+
 from ui.main_componenets import *
 
 from ui.protocols import Protocols

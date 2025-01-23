@@ -75,7 +75,8 @@ class UserController:
         button.clicked.connect(content)
         layout.addWidget(button, alignment=alignment)
 
-    def main_container(self) -> QWidget:
+    @staticmethod
+    def main_container() -> QWidget:
         container = QWidget()
         container_layout = QVBoxLayout()
 

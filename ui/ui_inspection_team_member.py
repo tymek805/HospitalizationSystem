@@ -1,6 +1,9 @@
+from PyQt6.QtWidgets import QSpacerItem
+
 from ui.main_componenets import *
 
 from ui.protocols import Protocols
+
 
 class InspectionTMController(UserController):
     def __init__(self, content_layout, db_manager):
@@ -12,7 +15,7 @@ class InspectionTMController(UserController):
         self.clear_content()
         container = self.main_container()
         self.action_button("Protokoły hospitacji", self.protocols_screen, container.layout())
-        container.layout().addItem( QSpacerItem(40, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        container.layout().addItem(QSpacerItem(40, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
         self.content_layout.addWidget(container)
 
     def protocols_screen(self):
