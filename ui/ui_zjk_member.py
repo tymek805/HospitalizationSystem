@@ -1,11 +1,11 @@
-from ui.main_componenets import *
-
-from ui.protocols import Protocols
-from ui.notification_dialog import NotificationDialog
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout,
-    QHBoxLayout, QFrame, QApplication, QSpacerItem, QSizePolicy, QTextEdit, QScrollArea, QCheckBox
+    QHBoxLayout, QFrame, QSpacerItem, QSizePolicy, QCheckBox
 )
+
+from ui.main_componenets import *
+from ui.notification_dialog import NotificationDialog
+
 
 class ZJKMemberController(UserController):
     def __init__(self, content_layout, db_manager):

@@ -1,11 +1,9 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QScreen
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
-    QWidget, QLabel, QPushButton, QVBoxLayout,
+    QLabel, QPushButton, QVBoxLayout,
     QLineEdit, QMessageBox, QDialog, QApplication
 )
-
-from ui.main_screen import MainWindow
 
 
 class LoginDialog(QDialog):

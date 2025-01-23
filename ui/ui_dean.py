@@ -1,3 +1,5 @@
+from PyQt6.QtWidgets import QSpacerItem, QTextEdit
+
 from ui.main_componenets import *
 
 # from ui.reports import reports
