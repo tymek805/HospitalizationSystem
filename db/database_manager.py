@@ -101,7 +101,7 @@ class DatabaseManager:
 
         -- Tabla: Semestr
         CREATE TABLE IF NOT EXISTS Semestr (
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             Rok INTEGER NOT NULL,
             Ktora_polowa BOOLEAN,
             Nazwa_semestru VARCHAR(255)
@@ -360,6 +360,25 @@ class DatabaseManager:
 
         connection.close()
         return protocols
+
+    def get_reports(self):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        cursor.execute("""SELECT 
+            Raport_z_hospitacji.sciezka_do_pliku,
+            Semestr.rok,
+            Semestr.ktora_polowa,
+            Semestr.nazwa_semestru
+            FROM Raport_z_hospitacji 
+            JOIN Semestr ON Raport_z_hospitacji.semestr_id = Semestr.id;
+        """)
+
+        reports = cursor.fetchall()
+
+        connection.close()
+        return reports
+
 
     def get_semester_name(self, report_id):
         connection = sqlite3.connect(self.DATABASE_NAME)

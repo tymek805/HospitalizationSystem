@@ -8,6 +8,12 @@ from PyQt6.QtWidgets import (
 from db.database_manager import UserType
 from ui.notification_dialog import NotificationDialog
 
+# from ui.protocols_screen import protocols_screen_1
+from ui.main_componenets import MainLayout
+from ui.ui_inpsected import InspectedController
+from ui.ui_inspection_team_member import InspectionTMController
+from ui.ui_dean import DeanController
+
 
 class MainWindow(QWidget):
 
@@ -21,72 +27,7 @@ class MainWindow(QWidget):
         self.init_ui()
         self.center()
 
-    def init_ui(self):
-        content_frame = QFrame()
-
-        main_layout = QVBoxLayout()
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-
-        self.content_layout = QVBoxLayout()
-        content_frame.setLayout(self.content_layout)
-        scroll_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        scroll_area.setWidget(content_frame)
-
-        self.main_screen()
-
-        main_layout.addLayout(self.header_layout())
-        h_line = QFrame()
-        h_line.setFrameShape(QFrame.Shape.HLine)
-        h_line.setStyleSheet("color: black;")
-        main_layout.addWidget(h_line)
-
-        main_layout.addWidget(scroll_area)
-        # main_layout.addStretch()
-        self.setLayout(main_layout)
-
-    def main_screen(self):
-        self.clear_content()
-
-        container = QWidget()
-        container_layout = QVBoxLayout()
-
-        actions_label = QLabel("Dostępne akcje:")
-        actions_label.setFont(QFont("Arial", 14))
-        container_layout.addWidget(actions_label, alignment=Qt.AlignmentFlag.AlignTop)
-
-        self.add_actions(container_layout)
-        container_layout.setSpacing(20)
-        container.setLayout(container_layout)
-        container_layout.addStretch()
-        self.content_layout.addWidget(container)
-        # self.content_layout.setSpacing(20)
-
-    def protocols_screen_1(self):
-        self.clear_content()
-        container = QWidget()
-        container_layout = QHBoxLayout()
-
-        actions_label = QLabel("Dostępne protokoły:")
-        actions_label.setFont(QFont("Arial", 14))
-        spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        back_button = QPushButton("Powrót")
-        back_button.clicked.connect(self.main_screen)
-        container_layout.addWidget(actions_label)
-        container_layout.addSpacerItem(spacer)
-        container_layout.addWidget(back_button)
-        container.setLayout(container_layout)
-
-        self.content_layout.addWidget(container)
-
-        if self.user_role == UserType.INSPECTED:
-            protocols = self.db_manager.get_protocols(self.db_manager.logged_user)
-        else:
-            protocols = self.db_manager.get_all_protocols(self.db_manager.logged_user)
-
-        for protocol in protocols:
-            protocol_title = f"{self.db_manager.get_employee_full_name(protocol[0])} - {protocol[4]}"
-            self.action_button(protocol_title, lambda : self.protocols_screen_2(protocol), self.content_layout, Qt.AlignmentFlag.AlignHCenter)
+        self.content_layout: MainLayout
 
     def protocols_screen_2(self, protocol):
         self.clear_content()
@@ -280,36 +221,29 @@ class MainWindow(QWidget):
         layout.setContentsMargins(5, 10, 5, 10)
         return layout
 
-    def add_actions(self, layout):
+    def init_ui(self):
+        main_layout = MainLayout(self.db_manager, self.user_role)
+        self.content_layout = main_layout.content_layout
+
+        # self.main_screen()
         if self.user_role == UserType.INSPECTED:
-            self.action_button("Protokoły hospitacji", self.protocols_screen_1, layout)
+            self.user_controller = InspectedController(self.content_layout, self.db_manager)
         elif self.user_role == UserType.INSPECTION_TEAM_MEMBER:
-            self.action_button("Protokoły hospitacji", self.protocols_screen_1, layout)
-        elif self.user_role == UserType.ZJK_MEMBER:
-            self.action_button("Zarządzanie wykazem osób proponowanych do hospitacji", self.list_of_recommended, layout)
+#             self.action_button("Protokoły hospitacji", self.protocols_screen_1, layout)
+#         elif self.user_role == UserType.ZJK_MEMBER:
+#             self.action_button("Zarządzanie wykazem osób proponowanych do hospitacji", self.list_of_recommended, layout)
+
+            self.user_controller = InspectionTMController(self.content_layout, self.db_manager)
+        # elif self.user_role == UserType.ZJK_MEMBER:
+        #     pass
+        elif self.user_role == UserType.DEAN:
+            self.user_controller = DeanController(self.content_layout, self.db_manager)
+        # elif self.user_role == UserType.HEAD_OF_DEPARTMENT:
+        #     pass
         else:
             print("No action found for this UserType")
 
-
-    def action_button(self, text, content, layout, alignment=Qt.AlignmentFlag.AlignTop):
-        button = QPushButton(text)
-        button.setStyleSheet("padding: 10px;")
-        button.clicked.connect(content)
-        layout.addWidget(button, alignment=alignment)
-
-    def clear_content(self):
-        for i in reversed(range(self.content_layout.count())):
-            widget = self.content_layout.itemAt(i).widget()
-            if widget:
-                widget.deleteLater()
-
-    def load_protocol_content(self, file_path):
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-                return content
-        except Exception as e:
-            return f"Error loading file: {str(e)}"
+        self.setLayout(main_layout)
 
     def center(self):
         frame_geometry = self.frameGeometry()
