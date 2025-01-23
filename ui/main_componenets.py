@@ -81,6 +81,11 @@ class UserController:
 
         container_layout.setSpacing(20)
         container.setLayout(container_layout)
-        container_layout.addStretch()
+        # container_layout.addStretch()
         return container
         # self.content_layout.setSpacing(20)
+
+    def main_screen(self):
+        self.clear_content()
+        container = self.main_container()
+        self.content_layout.addWidget(container)

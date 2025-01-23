@@ -9,6 +9,8 @@ from db.database_manager import UserType
 # from ui.protocols_screen import protocols_screen_1
 from ui.main_componenets import MainLayout
 from ui.ui_inpsected import InspectedController
+from ui.ui_inspection_team_member import InspectionTMController
+from ui.ui_dean import DeanController
 
 
 class MainWindow(QWidget):
@@ -32,31 +34,18 @@ class MainWindow(QWidget):
         # self.main_screen()
         if self.user_role == UserType.INSPECTED:
             self.user_controller = InspectedController(self.content_layout, self.db_manager)
-        # elif self.user_role == UserType.INSPECTION_TEAM_MEMBER:
-        #     self.action_button("Protokoły hospitacji", self.protocols_screen_1, layout)
+        elif self.user_role == UserType.INSPECTION_TEAM_MEMBER:
+            self.user_controller = InspectionTMController(self.content_layout, self.db_manager)
         # elif self.user_role == UserType.ZJK_MEMBER:
-        #     self.action_button("Zarządzanie wykazem osób proponowanych do hospitacji", layout)
+        #     pass
+        elif self.user_role == UserType.DEAN:
+            self.user_controller = DeanController(self.content_layout, self.db_manager)
+        # elif self.user_role == UserType.HEAD_OF_DEPARTMENT:
+        #     pass
         else:
             print("No action found for this UserType")
 
         self.setLayout(main_layout)
-
-    def main_screen(self):
-        self.clear_content()
-
-        container = QWidget()
-        container_layout = QVBoxLayout()
-
-        actions_label = QLabel("Dostępne akcje:")
-        actions_label.setFont(QFont("Arial", 14))
-        container_layout.addWidget(actions_label, alignment=Qt.AlignmentFlag.AlignTop)
-
-        self.add_actions(container_layout)
-        container_layout.setSpacing(20)
-        container.setLayout(container_layout)
-        container_layout.addStretch()
-        self.content_layout.addWidget(container)
-        # self.content_layout.setSpacing(20)
 
     def center(self):
         frame_geometry = self.frameGeometry()

@@ -2,7 +2,7 @@ from ui.main_componenets import *
 
 from ui.protocols import Protocols
 
-class InspectedController(UserController):
+class InspectionTMController(UserController):
     def __init__(self, content_layout, db_manager):
         super().__init__(content_layout)
         self.db_manager = db_manager
@@ -16,5 +16,5 @@ class InspectedController(UserController):
         self.content_layout.addWidget(container)
 
     def protocols_screen(self):
-        prot = Protocols(self, self.db_manager.get_protocols(self.db_manager.logged_user))
+        prot = Protocols(self, self.db_manager.get_all_protocols(self.db_manager.logged_user))
         prot.protocols_screen_1()
