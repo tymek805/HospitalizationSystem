@@ -127,7 +127,7 @@ class DatabaseManager:
             wykaz_osob_proponowanych_do_hospitacji_id INTEGER,
             pracownik_uczelni_id INTEGER,
             PRIMARY KEY (wykaz_osob_proponowanych_do_hospitacji_id, pracownik_uczelni_id),
-            FOREIGN KEY (wykaz_osob_proponowanych_do_hospitacji_id) REFERENCES wykaz_osob_proponowanych_do_hospitacji_id(id),
+            FOREIGN KEY (wykaz_osob_proponowanych_do_hospitacji_id) REFERENCES Wykaz_osob_proponowanych_do_hospitacji(id),
             FOREIGN KEY (pracownik_uczelni_id) REFERENCES Pracownik_uczelni(id)
         );
 
@@ -180,7 +180,7 @@ class DatabaseManager:
         cursor.execute("SELECT ID FROM Pracownik_uczelni")
         employees_id = cursor.fetchall()
 
-        users = [(employees_id[i][0], f"user{i + 1}", f"password{i + 1}") for i in range(len(UserType))]
+        users = [(employees_id[i][0], f"user{i + 1}", f"pass") for i in range(len(UserType))]
 
         cursor.executemany("""
             INSERT OR IGNORE INTO Users (pracownik_uczelni_id, username, password) 
