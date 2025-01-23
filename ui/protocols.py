@@ -69,8 +69,7 @@ class Protocols:
         side_panel = QVBoxLayout()
         side_panel.addWidget(QLabel(f"Ocena końcowa: {protocol[3]}"))
         side_panel.addWidget(QLabel(f"Data utworzenia: {protocol[4]}"))
-        side_panel.addWidget(QLabel(
-            f"Hospitowany: {self.user_controller.db_manager.get_fullname(self.user_controller.db_manager.get_employee_id_from_hospitalization(protocol[1]))}"))
+        side_panel.addWidget(QLabel(f"Hospitowany: {self.user_controller.db_manager.get_fullname(self.user_controller.db_manager.get_employee_id_from_hospitalization(protocol[1]))}"))
 
         side_panel_container.setLayout(side_panel)
         protocol_layout.addWidget(protocol_text, 3)

@@ -7,10 +7,11 @@ from PyQt6.QtWidgets import (
 
 
 class MainLayout(QVBoxLayout):
-    def __init__(self, db_manager, user_role):
+    def __init__(self, db_manager, user_role, logout_action):
         super().__init__()
         self.db_manager = db_manager
         self.user_role = user_role
+        self.logout_action = logout_action
 
         content_frame = QFrame()
 
@@ -31,6 +32,8 @@ class MainLayout(QVBoxLayout):
         self.addWidget(scroll_area)
         # main_layout.addStretch()
 
+    # def logout(self):
+
     def header_layout(self):
         layout = QHBoxLayout()
 
@@ -45,6 +48,7 @@ class MainLayout(QVBoxLayout):
         user_label = QLabel(self.db_manager.get_fullname(self.db_manager.logged_user))
         user_label.setStyleSheet("border: 1px solid black; padding: 10px;")
         logout_button = QPushButton("Wyloguj")
+        logout_button.clicked.connect(self.logout_action)
         logout_button.setStyleSheet("padding: 10px;")
 
         user_info_layout.addWidget(user_label)
