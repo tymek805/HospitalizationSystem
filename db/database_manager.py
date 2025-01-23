@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 
 class UserType(Enum):
@@ -123,7 +123,7 @@ class DatabaseManager:
         );
 
         -- Tabla: Wykaz osób proponowanych do hospitacji Pracownik uczelni
-        CREATE TABLE IF NOT EXISTS Wykaz_osob_proponowanych_Pracownik_uczelni (
+        CREATE TABLE IF NOT EXISTS Wykaz_osob_proponowanych_do_hospitacji_Pracownik_uczelni (
             wykaz_osob_proponowanych_do_hospitacji_id INTEGER,
             pracownik_uczelni_id INTEGER,
             PRIMARY KEY (wykaz_osob_proponowanych_do_hospitacji_id, pracownik_uczelni_id),
@@ -156,17 +156,19 @@ class DatabaseManager:
         katedra_id = cursor.fetchone()[0]
 
         # Pracownicy
+        dates = ["2024-01-15", "2023-11-20", "2024-05-10", "2024-02-05", "2022-09-15", '2023-06-15', '2022-09-20', '2023-01-10', '2021-11-05', '2023-07-01']
+        times = [(datetime.today() - datetime.strptime(d, '%Y-%m-%d')).days for d in dates]
         employees = [
-            (katedra_id, "2024-01-15", 365, UserType.INSPECTED.name, "Jan", "Kowalski", "12345678901", "jan.kowalski@example.com",
-             "27092606378", "M", "Żeromskiego 1"),
-            (katedra_id, "2023-11-20", 400, UserType.INSPECTION_TEAM_MEMBER.name, "Anna", "Nowak", "98765432109", "anna.nowak@example.com",
-             "55041509281", "K", "1 Maja 10"),
-            (katedra_id, "2024-05-10", 150, UserType.ZJK_MEMBER.name, "Piotr", "Zieliński", "63041773698",
-             "piotr.zielinski@example.com", "555666777", "M", "Czwartaków 3"),
-            (katedra_id, "2024-02-05", 300, UserType.DEAN.name, "Maria", "Wiśniewska", "86100808117",
-             "maria.wisniewska@example.com", "444555666", "K", "Morcinka 4"),
-            (katedra_id, "2022-09-15", 700, UserType.HEAD_OF_DEPARTMENT.name, "Tomasz", "Lewandowski", "77788899900",
-             "tomasz.lewandowski@example.com", "222333444", "M", "Kasprzaka Marcina 5"),
+            (katedra_id, "2024-01-15", times[0], UserType.INSPECTED.name, "Jan", "Kowalski", "99012231571", "jan.kowalski@example.com", "348872185", "M", "Żeromskiego 1"),
+            (katedra_id, "2023-11-20", times[1], UserType.INSPECTION_TEAM_MEMBER.name, "Anna", "Nowak", "05312543485", "anna.nowak@example.com", "725585457", "K", "1 Maja 10"),
+            (katedra_id, "2024-05-10", times[2], UserType.ZJK_MEMBER.name, "Piotr", "Zieliński", "63041773698", "piotr.zielinski@example.com", "555666777", "M", "Czwartaków 3"),
+            (katedra_id, "2024-02-05", times[3], UserType.DEAN.name, "Maria", "Wiśniewska", "86100808117", "maria.wisniewska@example.com", "444555666", "K", "Morcinka 4"),
+            (katedra_id, "2022-09-15", times[4], UserType.HEAD_OF_DEPARTMENT.name, "Tomasz", "Lewandowski", "77788899900", "tomasz.lewandowski@example.com", "645771393", "M", "Kasprzaka Marcina 5"),
+            (katedra_id, '2023-06-15', times[5], UserType.INSPECTED.name, 'Marek', 'Kowalczyk', '66112766582', 'marek.kowalczyk@example.com', '957248128', 'M', 'Wojska Polskiego 1'),
+            (katedra_id, '2022-09-20', times[6], UserType.INSPECTED.name, 'Ewa', 'Nowicka', '98765432109', 'ewa.nowicka@example.com', '574029616', 'K', 'Niedziałkowskiego 2'),
+            (katedra_id, '2023-01-10', times[7], UserType.INSPECTED.name, 'Tomasz', 'Wiśniewski', '05292919362', 'tomasz.wisniewski@example.com', '880484915', 'M', 'Gajowicka 3'),
+            (katedra_id, '2021-11-05', times[8], UserType.INSPECTED.name, 'Karolina', 'Zielińska', '03320649562', 'karolina.zielinska@example.com', '890700359', 'K', 'Hallera 4'),
+            (katedra_id, '2023-07-01', times[9], UserType.INSPECTED.name, 'Paweł', 'Lewandowski', '97080351623', 'pawel.lewandowski@example.com', '881630304', 'M', 'Piłsudzkiego 5')
         ]
 
         cursor.executemany("""
@@ -184,6 +186,12 @@ class DatabaseManager:
             INSERT OR IGNORE INTO Users (pracownik_uczelni_id, username, password) 
             VALUES (?, ?, ?)
         """, users)
+
+        empl = cursor.execute("SELECT ID FROM Pracownik_uczelni WHERE stanowisko=?", (UserType.INSPECTED.name,)).fetchall()
+        cursor.execute("INSERT OR IGNORE INTO Wykaz_osob_proponowanych_do_hospitacji (data_utworzenia) VALUES (?)", (datetime.today().strftime("%Y-%m-%d"),))
+
+        for e in empl:
+            cursor.execute("INSERT OR IGNORE INTO Wykaz_osob_proponowanych_do_hospitacji_Pracownik_uczelni (wykaz_osob_proponowanych_do_hospitacji_id, pracownik_uczelni_id) VALUES (?, ?)", (1, e[0]))
 
         cursor.execute("INSERT OR IGNORE INTO Ramowy_harmonogram_hospitacji (id, zatwierdzony) VALUES (1, 1)")
 
@@ -215,6 +223,32 @@ class DatabaseManager:
 
         connection.commit()
         connection.close()
+
+    def get_recommended_employees(self):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        query = """
+            SELECT 
+                pu.id,
+                pu.Imie,
+                pu.Nazwisko,
+                k.Nazwa,
+                pu.Czas_od_ostatniej_hospitacji
+            FROM Wykaz_osob_proponowanych_do_hospitacji wop
+            JOIN Wykaz_osob_proponowanych_do_hospitacji_Pracownik_uczelni woppu 
+                ON wop.ID = woppu.Wykaz_osob_proponowanych_do_hospitacji_id
+            JOIN Pracownik_uczelni pu 
+                ON woppu.pracownik_uczelni_id = pu.ID
+            JOIN Katedra k 
+                ON pu.katedra_id = k.ID;
+        """
+
+        cursor.execute(query)
+        results = cursor.fetchall()
+        connection.close()
+
+        return results
 
     def login(self, username, password):
         connection = sqlite3.connect(self.DATABASE_NAME)
