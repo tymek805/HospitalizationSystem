@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QWidget, QApplication
+    QWidget, QApplication, QMainWindow
 )
 
 from db.database_manager import UserType
@@ -10,7 +10,7 @@ from ui.ui_inspection_team_member import InspectionTMController
 from ui.ui_zjk_member import ZJKMemberController
 
 
-class MainWindow(QWidget):
+class MainWindow(QMainWindow):
 
     def __init__(self, database_manager, logout_action):
         super().__init__()
@@ -41,7 +41,9 @@ class MainWindow(QWidget):
         else:
             print("No action found for this UserType")
 
-        self.setLayout(main_layout)
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+        central_widget.setLayout(main_layout)
 
     def center(self):
         frame_geometry = self.frameGeometry()
