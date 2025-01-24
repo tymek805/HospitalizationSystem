@@ -1,6 +1,6 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMainWindow
 
 from db.database_manager import DatabaseManager
 from ui.login_screen import LoginDialog
@@ -10,36 +10,25 @@ from ui.main_screen import MainWindow
 def main():
     app = QApplication(sys.argv)
     db = DatabaseManager()
-    login = LoginDialog(db)
-    result = login.exec()
+    main_window: QMainWindow|None = None
 
-
-    # login_action(db)
-    main_screen: MainWindow
-    if result:
-        main_screen = MainWindow(db, lambda: logout_action(main_screen, db))
-        main_screen.show()
-
-    def logout_action(db):
-        main_screen.hide()
-        # main_screen = None
-        db.logged_user = None
-        login = LoginDialog(db)
-        result = login.exec()
+    def login():
+        nonlocal main_window
+        nonlocal db
+        print("logowanie")
+        if main_window is not None:
+            print("not none")
+            main_window.close()
+            db.logged_user = None
+        loginDialog = LoginDialog(db)
+        result = loginDialog.exec()
         if result:
-            main_screen = MainWindow(db, lambda: logout_action(main_screen, db))
-            main_screen.show()
-    # login.show()
+            main_window = MainWindow(db, login)
+            main_window.show()
+
+    login()
     sys.exit(app.exec())
 
-def login_action(db):
-    db.logged_user = None
-    login = LoginDialog(db)
-    result = login.exec()
-    if result:
-        print("resutl")
-        main_screen = MainWindow(db, lambda: login_action(db))
-        main_screen.show()
 
 if __name__ == "__main__":
     main()
