@@ -27,7 +27,6 @@ class Protocols:
         container_layout.addSpacerItem(spacer)
         container_layout.addWidget(back_button)
         container.setLayout(container_layout)
-
         self.user_controller.content_layout.addWidget(container)
 
         for protocol in self.protocols:
@@ -35,8 +34,15 @@ class Protocols:
             UserController.action_button(protocol_title, lambda: self.protocols_screen_2(protocol), self.user_controller.content_layout,
                                Qt.AlignmentFlag.AlignHCenter)
 
+        # stretchy_spacer_thing = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        # some_Vbox_layout.addItem(self.stretchie)
+
+        self.user_controller.content_layout.addStretch()
+
     def protocols_screen_2(self, protocol):
+        # self.user_controller.content_layout.
         self.user_controller.clear_content()
+
         container = QWidget()
         container_layout = QHBoxLayout()
         print(protocol)
@@ -51,7 +57,6 @@ class Protocols:
         container_layout.addWidget(back_button)
         container.setLayout(container_layout)
         self.user_controller.content_layout.addWidget(container)
-
         protocol_container = QWidget()
         protocol_layout = QHBoxLayout()
 

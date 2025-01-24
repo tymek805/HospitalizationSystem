@@ -64,7 +64,10 @@ class UserController:
 
     def clear_content(self):
         for i in reversed(range(self.content_layout.count())):
-            widget = self.content_layout.itemAt(i).widget()
+            widget = self.content_layout.itemAt(i)
+            if widget and widget.spacerItem():
+                self.content_layout.removeItem(widget)
+            widget = widget.widget()
             if widget:
                 widget.deleteLater()
 
