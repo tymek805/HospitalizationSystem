@@ -1,8 +1,6 @@
-from PyQt6.QtWidgets import QSpacerItem, QTableWidget, QTableWidgetItem, QHeaderView
+from PyQt6.QtWidgets import QSpacerItem, QTableWidget, QTableWidgetItem, QHeaderView, QGridLayout, QComboBox
 
 from ui.main_componenets import *
-
-from ui.protocols import Protocols
 
 class HeadOfDepartmentController(UserController):
     def __init__(self, content_layout, db_manager):
@@ -64,12 +62,11 @@ class HeadOfDepartmentController(UserController):
 
             self.table.setItem(row, 3, QTableWidgetItem(str(time) + " dni"))
             choose_button = QPushButton("Wybierz członków zespołu")
-            choose_button.clicked.connect(lambda: self.choose_inspection_team(employee_id))
+            choose_button.clicked.connect(lambda _, emp_id=employee_id: self.choose_inspection_team(emp_id))
             self.table.setCellWidget(row, 4, choose_button)
 
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-
 
         # Włączenie wyświetlania pełnego tekstu po najechaniu kursorem
         self.table.setToolTipDuration(-1)
@@ -82,11 +79,115 @@ class HeadOfDepartmentController(UserController):
 
     def choose_inspection_team(self, employee_id):
         self.clear_content()
-        self.content_layout.addWidget(self.head("Członkowie zespołu hospitacyjnego", lambda: self.auto_generated_teams(employee_id), self.choose_inspected))
-        self.content_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        employees: list[tuple] = self.db_manager.get_employees()
+        chosen_employee = employees.pop([emp[0] for emp in employees].index(employee_id))
+        self.content_layout.addWidget(self.head("Członkowie zespołu hospitacyjnego dla hospitowanego\n"
+                                                f"{chosen_employee[1]} {chosen_employee[2]} - {chosen_employee[3]}",
+                                                lambda: self.auto_generated_teams(employee_id), self.choose_inspected))
+
+
+
+        grid_layout = QGridLayout()  # For the two comboboxes
+        button_layout = QHBoxLayout()  # For the confirmation button
+
+        # Labels
+        label1 = QLabel("Wybierz przewodniczącego:")
+        label2 = QLabel("Wybierz drugiego członka zespołu:")
+
+        # ComboBoxes for employee selection
+        self.employee_box_1 = QComboBox()
+        self.employee_box_2 = QComboBox()
+
+        # Populate the ComboBoxes
+        employees_sorted = sorted(employees, key=lambda x: (x[2], x[1], x[3]))
+        for emp in employees_sorted:
+            display_text = f"{emp[1]} {emp[2]} - {emp[3]}"
+            self.employee_box_1.addItem(display_text, emp[0])  # ID as data
+            self.employee_box_2.addItem(display_text, emp[0])  # ID as data
+
+        self.employee_box_1.setCurrentIndex(-1)
+        self.employee_box_2.setCurrentIndex(-1)
+
+        # Confirmation button
+        confirm_button = QPushButton("Zatwierdź")
+        confirm_button.setFixedSize(100, 30)
+        def confirm_selection():
+            # Get selected employee IDs from both combo boxes
+            emp1_id = self.employee_box_1.currentData()
+            emp2_id = self.employee_box_2.currentData()
+            if emp1_id is None or emp2_id is None:
+                show_error_message("Nie wybrano wszystkich członków")
+                return
+            if emp1_id == emp2_id:
+                show_error_message("Członkowie nie mogą się powtarzać")
+                return
+            nonlocal employees_sorted
+        confirm_button.clicked.connect(confirm_selection)
+
+        # Adding widgets to layouts
+        grid_layout.addWidget(label1, 0, 0, alignment=Qt.AlignmentFlag.AlignLeft)
+        grid_layout.addWidget(self.employee_box_1, 0, 1)
+
+        grid_layout.addWidget(label2, 1, 0, alignment=Qt.AlignmentFlag.AlignLeft)
+        grid_layout.addWidget(self.employee_box_2, 1, 1)
+
+        button_layout.addStretch()  # Push button to the right
+        button_layout.addWidget(confirm_button)
+
+        # Adding sub-layouts to main layout
+        sum_layout = QVBoxLayout()
+        sum_layout.addLayout(grid_layout)
+        sum_layout.addStretch()  # Push button layout to the bottom
+        sum_layout.addLayout(button_layout)
+        container = QWidget()
+        container.setLayout(sum_layout)
+        self.content_layout.addWidget(container)
 
     def auto_generated_teams(self, employee_id):
         self.clear_content()
         self.content_layout.addWidget(self.head("Automatycznie wygenerowane zespoły", None, lambda: self.choose_inspection_team(employee_id)))
+
+        teams = teams = [
+        ((1, "Jan", "Kowalski", "Katedra Matematyki", 30),
+         (2, "Anna", "Nowak", "Katedra Fizyki", 40)),
+        ((3, "Piotr", "Wiśniewski", "Katedra Informatyki", 25),
+         (4, "Katarzyna", "Zielińska", "Katedra Chemii", 35)),
+        ((5, "Adam", "Nowicki", "Katedra Biologii", 20),
+         (6, "Ewa", "Wiśniewska", "Katedra Geografii", 50)),
+    ]
+        # Scroll area for teams
+        scroll_area = QScrollArea()
+        scroll_widget = QWidget()
+        scroll_layout = QGridLayout(scroll_widget)
+
+        # Dynamically add teams with buttons
+        header_label1 = QLabel("Przewodniczący")
+        header_label2 = QLabel("Drugi członek")
+        header_label1.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        header_label2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        header_label1.setStyleSheet("font-weight: bold; font-size: 14px;")
+        header_label2.setStyleSheet("font-weight: bold; font-size: 14px;")
+        scroll_layout.addWidget(header_label1, 0, 0)
+        scroll_layout.addWidget(header_label2, 0, 1)
+        for row, team in enumerate(teams):
+            row+=1
+            # Team member 1
+            person_1_label = QLabel(f"{team[0][1]} {team[0][2]} - {team[0][3]}")
+            scroll_layout.addWidget(person_1_label, row, 0)
+
+            # Team member 2
+            person_2_label = QLabel(f"{team[1][1]} {team[1][2]} - {team[1][3]}")
+            scroll_layout.addWidget(person_2_label, row, 1)
+
+            # Select button
+            select_button = QPushButton("Wybierz")
+            select_button.clicked.connect(lambda _, t=team: self.select_team(t))
+            scroll_layout.addWidget(select_button, row, 2)
+
+        scroll_widget.setLayout(scroll_layout)
+        scroll_area.setWidget(scroll_widget)
+        scroll_area.setWidgetResizable(True)
+        self.content_layout.addWidget(scroll_area)
+
         self.content_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 

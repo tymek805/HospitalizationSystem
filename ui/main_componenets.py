@@ -2,7 +2,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout,
-    QHBoxLayout, QFrame, QSizePolicy, QScrollArea
+    QHBoxLayout, QFrame, QSizePolicy, QScrollArea, QMessageBox
 )
 
 
@@ -30,9 +30,7 @@ class MainLayout(QVBoxLayout):
         self.addWidget(h_line)
 
         self.addWidget(scroll_area)
-        # main_layout.addStretch()
 
-    # def logout(self):
 
     def header_layout(self):
         layout = QHBoxLayout()
@@ -97,3 +95,11 @@ class UserController:
         self.clear_content()
         container = self.main_container()
         self.content_layout.addWidget(container)
+
+def show_error_message(message: str):
+    msg_box = QMessageBox()
+    msg_box.setIcon(QMessageBox.Icon.Critical)  # Ikona błędu
+    msg_box.setWindowTitle("Błąd")  # Tytuł okienka
+    msg_box.setText(message)  # Treść błędu
+    msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)  # Przycisk OK
+    msg_box.exec()

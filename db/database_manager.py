@@ -224,6 +224,29 @@ class DatabaseManager:
         connection.commit()
         connection.close()
 
+    def _ask_database(self, query):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+        cursor.execute(query)
+        results = cursor.fetchall()
+        connection.close()
+
+        return results
+
+    def get_employees(self):
+        return self._ask_database("""
+            SELECT 
+                pu.id,
+                pu.Imie,
+                pu.Nazwisko,
+                k.Nazwa,
+                pu.Czas_od_ostatniej_hospitacji
+            FROM Pracownik_uczelni pu 
+            JOIN Katedra k 
+                ON pu.katedra_id = k.ID;
+        """)
+
+
     def get_recommended_employees(self):
         connection = sqlite3.connect(self.DATABASE_NAME)
         cursor = connection.cursor()
