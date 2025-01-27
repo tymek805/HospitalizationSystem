@@ -250,6 +250,39 @@ class DatabaseManager:
 
         return results
 
+    def get_newest_recommended_list(self):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        query = """
+            WITH Najnowszy_wykaz AS (
+                SELECT id
+                FROM Wykaz_osob_proponowanych_do_hospitacji
+                ORDER BY data_utworzenia DESC
+                LIMIT 1
+            )
+            SELECT 
+                pu.id,
+                pu.Imie,
+                pu.Nazwisko,
+                k.Nazwa,
+                pu.Czas_od_ostatniej_hospitacji
+            FROM Najnowszy_wykaz nw 
+            LEFT JOIN Wykaz_osob_proponowanych_do_hospitacji_Pracownik_uczelni woppu 
+                ON nw.id = woppu.Wykaz_osob_proponowanych_do_hospitacji_id
+            LEFT JOIN Pracownik_uczelni pu 
+                ON woppu.pracownik_uczelni_id = pu.ID
+            LEFT JOIN Katedra k 
+                ON pu.katedra_id = k.ID;
+            
+        """
+
+        cursor.execute(query)
+        results = cursor.fetchall()
+        connection.close()
+
+        return results
+
     def login(self, username, password):
         connection = sqlite3.connect(self.DATABASE_NAME)
         cursor = connection.cursor()

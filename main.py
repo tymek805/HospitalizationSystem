@@ -15,13 +15,11 @@ def main():
     def login():
         nonlocal main_window
         nonlocal db
-        print("logowanie")
         if main_window is not None:
-            print("not none")
             main_window.close()
             db.logged_user = None
-        loginDialog = LoginDialog(db)
-        result = loginDialog.exec()
+        login_dialog = LoginDialog(db)
+        result = login_dialog.exec()
         if result:
             main_window = MainWindow(db, login)
             main_window.show()

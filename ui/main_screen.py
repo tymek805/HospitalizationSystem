@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
 from db.database_manager import UserType
 from ui.main_componenets import MainLayout
 from ui.ui_dean import DeanController
+from ui.ui_head_of_department import HeadOfDepartmentController
 from ui.ui_inpsected import InspectedController
 from ui.ui_inspection_team_member import InspectionTMController
 from ui.ui_zjk_member import ZJKMemberController
@@ -36,8 +37,8 @@ class MainWindow(QMainWindow):
             self.user_controller = ZJKMemberController(self.content_layout, self.db_manager)
         elif self.user_role == UserType.DEAN:
             self.user_controller = DeanController(self.content_layout, self.db_manager)
-        # elif self.user_role == UserType.HEAD_OF_DEPARTMENT:
-        #     pass
+        elif self.user_role == UserType.HEAD_OF_DEPARTMENT:
+            self.user_controller = HeadOfDepartmentController(self.content_layout, self.db_manager)
         else:
             print("No action found for this UserType")
 

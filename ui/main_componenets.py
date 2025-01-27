@@ -64,12 +64,12 @@ class UserController:
 
     def clear_content(self):
         for i in reversed(range(self.content_layout.count())):
-            widget = self.content_layout.itemAt(i)
-            if widget and widget.spacerItem():
-                self.content_layout.removeItem(widget)
-            widget = widget.widget()
+            item = self.content_layout.itemAt(i)
+            widget = item.widget()
             if widget:
                 widget.deleteLater()
+            else:
+                self.content_layout.removeItem(item)
 
     @staticmethod
     def action_button(text, content, layout, alignment=Qt.AlignmentFlag.AlignTop):
