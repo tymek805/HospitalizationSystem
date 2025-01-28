@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QSpacerItem, QTableWidget, QTableWidgetItem, QHeaderView, QGridLayout, QComboBox
 
 from ui.main_componenets import *
+import random
 
 class HeadOfDepartmentController(UserController):
     def __init__(self, content_layout, db_manager):
@@ -36,10 +37,13 @@ class HeadOfDepartmentController(UserController):
         return container
 
     def choose_inspected(self):
+        inspected_list = self.db_manager.get_newest_recommended_list()
+        if not inspected_list:
+            show_error_message("Brak osób proponowanych do hospitacji\nWybranie zespołów niemożliwe")
+            return self.main_screen()
         self.clear_content()
         self.content_layout.addWidget(self.head("Osoby proponowane do hospitacji", None, self.main_screen))
 
-        inspected_list = self.db_manager.get_newest_recommended_list()
         self.table = QTableWidget()
         self.table.setRowCount(len(inspected_list))  # Liczba wierszy
         self.table.setColumnCount(5)  # Liczba kolumn
@@ -85,8 +89,6 @@ class HeadOfDepartmentController(UserController):
                                                 f"{chosen_employee[1]} {chosen_employee[2]} - {chosen_employee[3]}",
                                                 lambda: self.auto_generated_teams(employee_id), self.choose_inspected))
 
-
-
         grid_layout = QGridLayout()  # For the two comboboxes
         button_layout = QHBoxLayout()  # For the confirmation button
 
@@ -121,7 +123,7 @@ class HeadOfDepartmentController(UserController):
             if emp1_id == emp2_id:
                 show_error_message("Członkowie nie mogą się powtarzać")
                 return
-            nonlocal employees_sorted
+            self.select_team(employee_id, emp1_id, emp2_id)
         confirm_button.clicked.connect(confirm_selection)
 
         # Adding widgets to layouts
@@ -147,14 +149,22 @@ class HeadOfDepartmentController(UserController):
         self.clear_content()
         self.content_layout.addWidget(self.head("Automatycznie wygenerowane zespoły", None, lambda: self.choose_inspection_team(employee_id)))
 
-        teams = teams = [
-        ((1, "Jan", "Kowalski", "Katedra Matematyki", 30),
-         (2, "Anna", "Nowak", "Katedra Fizyki", 40)),
-        ((3, "Piotr", "Wiśniewski", "Katedra Informatyki", 25),
-         (4, "Katarzyna", "Zielińska", "Katedra Chemii", 35)),
-        ((5, "Adam", "Nowicki", "Katedra Biologii", 20),
-         (6, "Ewa", "Wiśniewska", "Katedra Geografii", 50)),
-    ]
+        employees: list[tuple] = self.db_manager.get_employees()
+        chosen_employee = employees.pop([emp[0] for emp in employees].index(employee_id))
+
+        teams: list[tuple] = []
+        for idx in range(10):
+            diff_department_emps: [] = [emp for emp in employees if emp[3] != chosen_employee[3]]
+            if len(diff_department_emps) <= 0:
+                teams.append(tuple(random.sample(employees, 2)))
+            elif len(diff_department_emps) <= 0:
+                teams.append(
+                    (random.choice(diff_department_emps),
+                    random.choice(employees))
+                )
+            else:
+                teams.append(tuple(random.sample(diff_department_emps, 2)))
+
         # Scroll area for teams
         scroll_area = QScrollArea()
         scroll_widget = QWidget()
@@ -181,7 +191,7 @@ class HeadOfDepartmentController(UserController):
 
             # Select button
             select_button = QPushButton("Wybierz")
-            select_button.clicked.connect(lambda _, t=team: self.select_team(t))
+            select_button.clicked.connect(lambda _, emp1=team[0][0], emp2=team[1][0], c=employee_id: self.select_team(c ,emp1, emp2))
             scroll_layout.addWidget(select_button, row, 2)
 
         scroll_widget.setLayout(scroll_layout)
@@ -191,3 +201,13 @@ class HeadOfDepartmentController(UserController):
 
         self.content_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
+    def select_team(self, chosen_inspected, team1, team2):
+        print(f"{chosen_inspected} {team1} {team2}")
+
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        msg_box.setWindowTitle("")
+        msg_box.setText("Dodano zespół hospitacyjny")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.exec()
+        self.main_screen()
