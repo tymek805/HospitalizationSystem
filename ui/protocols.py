@@ -33,14 +33,9 @@ class Protocols:
             protocol_title = f"{self.user_controller.db_manager.get_employee_full_name(protocol[0])} - {protocol[4]}"
             UserController.action_button(protocol_title, lambda: self.protocols_screen_2(protocol), self.user_controller.content_layout,
                                Qt.AlignmentFlag.AlignHCenter)
-
-        # stretchy_spacer_thing = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        # some_Vbox_layout.addItem(self.stretchie)
-
         self.user_controller.content_layout.addStretch()
 
     def protocols_screen_2(self, protocol):
-        # self.user_controller.content_layout.
         self.user_controller.clear_content()
 
         container = QWidget()

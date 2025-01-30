@@ -187,12 +187,6 @@ class DatabaseManager:
             VALUES (?, ?, ?)
         """, users)
 
-        empl = cursor.execute("SELECT ID FROM Pracownik_uczelni WHERE stanowisko=?", (UserType.INSPECTED.name,)).fetchall()
-        cursor.execute("INSERT OR IGNORE INTO Wykaz_osob_proponowanych_do_hospitacji (data_utworzenia) VALUES (?)", (datetime.today().strftime("%Y-%m-%d"),))
-
-        for e in empl:
-            cursor.execute("INSERT OR IGNORE INTO Wykaz_osob_proponowanych_do_hospitacji_Pracownik_uczelni (wykaz_osob_proponowanych_do_hospitacji_id, pracownik_uczelni_id) VALUES (?, ?)", (1, e[0]))
-
         cursor.execute("INSERT OR IGNORE INTO Ramowy_harmonogram_hospitacji (id, zatwierdzony) VALUES (1, 1)")
 
         cursor.execute("INSERT OR IGNORE INTO Zespol_hospitujacy (id) VALUES (1)")
@@ -251,23 +245,19 @@ class DatabaseManager:
         connection = sqlite3.connect(self.DATABASE_NAME)
         cursor = connection.cursor()
 
-        query = """
+        cursor.execute("""
             SELECT 
                 pu.id,
                 pu.Imie,
                 pu.Nazwisko,
                 k.Nazwa,
                 pu.Czas_od_ostatniej_hospitacji
-            FROM Wykaz_osob_proponowanych_do_hospitacji wop
-            JOIN Wykaz_osob_proponowanych_do_hospitacji_Pracownik_uczelni woppu 
-                ON wop.ID = woppu.Wykaz_osob_proponowanych_do_hospitacji_id
-            JOIN Pracownik_uczelni pu 
-                ON woppu.pracownik_uczelni_id = pu.ID
+            FROM Pracownik_uczelni pu 
             JOIN Katedra k 
-                ON pu.katedra_id = k.ID;
-        """
+                ON pu.katedra_id = k.ID
+            WHERE stanowisko=?;
+        """, (UserType.INSPECTED.name,))
 
-        cursor.execute(query)
         results = cursor.fetchall()
         connection.close()
 
@@ -305,6 +295,26 @@ class DatabaseManager:
         connection.close()
 
         return results
+
+    def save_hospitation_employees_list(self, employees):
+        connection = sqlite3.connect(self.DATABASE_NAME)
+        cursor = connection.cursor()
+
+        query = """
+            INSERT INTO Wykaz_osob_proponowanych_do_hospitacji (data_utworzenia) VALUES (?)
+        """
+        cursor.execute(query, (datetime.today().strftime('%Y-%m-%d'),))
+        connection.commit()
+
+        wykaz_id = cursor.lastrowid
+
+        for emp_id in employee_ids:
+            cursor.execute(
+                "INSERT INTO Wykaz_osob_proponowanych_do_hospitacji_Pracownik_uczelni (wykaz_osob_proponowanych_do_hospitacji_id, pracownik_uczelni_id) VALUES (?, ?)",
+                (wykaz_id, emp_id)
+            )
+        conn.commit()
+        connection.close()
 
     def login(self, username, password):
         connection = sqlite3.connect(self.DATABASE_NAME)
