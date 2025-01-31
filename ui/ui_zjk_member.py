@@ -56,14 +56,16 @@ class ZJKMemberController(UserController):
         all_list_layout = QVBoxLayout(all_list_content)
         
         # Create first part
-        all_list_layout.addWidget(self.create_list_header("Pracownicy nie hospitowani w terminach podanych w zarządzeniu wewnętrznym"))
         employees = self.db_manager.get_recommended_employees()
         overdue_employees = [list(employee) for employee in employees if employee[-1] >= 800]
-        all_list_layout.addWidget(self.create_employee_list(overdue_employees))
+        if overdue_employees:
+            all_list_layout.addWidget(self.create_list_header("Pracownicy nie hospitowani w terminach podanych w zarządzeniu wewnętrznym"))
+            all_list_layout.addWidget(self.create_employee_list(overdue_employees))
 
-        all_list_layout.addWidget(self.create_list_header("Pracownicy hospitowani w terminach podanych w zarządzeniu wewnętrznym"))
         suggested_employees = [list(employee) for employee in employees if employee[-1] < 800]
-        all_list_layout.addWidget(self.create_employee_list(suggested_employees))
+        if suggested_employees:
+            all_list_layout.addWidget(self.create_list_header("Pracownicy hospitowani w terminach podanych w zarządzeniu wewnętrznym"))
+            all_list_layout.addWidget(self.create_employee_list(suggested_employees))
 
         continue_button.clicked.connect(lambda : self.summary_screen(overdue_employees, suggested_employees))
         self.content_layout.addWidget(all_list_content)
@@ -173,7 +175,7 @@ class ZJKMemberController(UserController):
         back_button.clicked.connect(self.list_of_recommended)
 
         continue_button = QPushButton("Zatwierdź")
-        continue_button.clicked.connect(self.confirm)
+        continue_button.clicked.connect(lambda: self.confirm(selected_employees))
 
         buttons_layout.addWidget(back_button)
         buttons_layout.addWidget(continue_button)
@@ -187,12 +189,18 @@ class ZJKMemberController(UserController):
         self.content_layout.addWidget(header)
         self.content_layout.addWidget(self.create_employee_list(selected_employees, True))
 
-    def confirm(self):
+    def confirm(self, selected_employees):
         """ TODO:
                 1. Zapisuje wybranych pracowników w wykazie osób proponowanych do hospitacji
                 2. Przesyła wykaz kierownikom katedr
                 3. Wyświetla powiadomienie o wykonaniu operacji
         """
+        if not selected_employees:
+            notification = EmptySelectedUsersDialog()
+            if notification.exec():
+                return
+
+        self.db_manager.save_hospitation_employees_list(selected_employees)
         # save_hospitation_employees_list
         self.confirm_notification()
 
@@ -247,6 +255,26 @@ class ConfirmationDialog(QDialog):
         main_layout = QVBoxLayout()
         message_label = QLabel("Wykaz został przesłany")
         message_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        message_label.setFont(QFont("Arial", 12))
+
+        continue_button = QPushButton("Kontynuuj")
+        continue_button.clicked.connect(self.accept)
+
+        main_layout.addWidget(message_label)
+        main_layout.addWidget(continue_button)
+
+        self.setLayout(main_layout)
+
+class EmptySelectedUsersDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Powiadomienie")
+        self.setFixedSize(250, 150)
+
+        main_layout = QVBoxLayout()
+        message_label = QLabel("Nie zostali wybrani żadni pracownicy")
+        message_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        message_label.setWordWrap(True)
         message_label.setFont(QFont("Arial", 12))
 
         continue_button = QPushButton("Kontynuuj")

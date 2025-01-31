@@ -247,15 +247,25 @@ class DatabaseManager:
 
         cursor.execute("""
             SELECT 
-                pu.id,
-                pu.Imie,
-                pu.Nazwisko,
-                k.Nazwa,
-                pu.Czas_od_ostatniej_hospitacji
-            FROM Pracownik_uczelni pu 
-            JOIN Katedra k 
-                ON pu.katedra_id = k.ID
-            WHERE stanowisko=?;
+                Pracownik_uczelni.ID,
+                Pracownik_uczelni.Imie,
+                Pracownik_uczelni.Nazwisko,
+                Katedra.Nazwa AS Nazwa_Katedry,
+                Pracownik_uczelni.czas_od_ostatniej_hospitacji
+            FROM 
+                Pracownik_uczelni
+            JOIN 
+                Katedra ON Pracownik_uczelni.katedra_id = Katedra.id
+            LEFT JOIN 
+                Wykaz_osob_proponowanych_do_hospitacji_Pracownik_uczelni AS Wykaz
+                ON Pracownik_uczelni.ID = Wykaz.pracownik_uczelni_id
+            LEFT JOIN 
+                Wykaz_osob_proponowanych_do_hospitacji AS WykazOsob
+                ON Wykaz.wykaz_osob_proponowanych_do_hospitacji_id = WykazOsob.ID
+            WHERE 
+                (Wykaz.pracownik_uczelni_id IS NULL 
+                OR WykazOsob.data_utworzenia < DATE('now', '-2 years')) AND
+                Pracownik_uczelni.stanowisko = ?;
         """, (UserType.INSPECTED.name,))
 
         results = cursor.fetchall()
@@ -308,12 +318,12 @@ class DatabaseManager:
 
         wykaz_id = cursor.lastrowid
 
-        for emp_id in employee_ids:
+        for employee in employees:
             cursor.execute(
                 "INSERT INTO Wykaz_osob_proponowanych_do_hospitacji_Pracownik_uczelni (wykaz_osob_proponowanych_do_hospitacji_id, pracownik_uczelni_id) VALUES (?, ?)",
-                (wykaz_id, emp_id)
+                (wykaz_id, employee[0])
             )
-        conn.commit()
+        connection.commit()
         connection.close()
 
     def login(self, username, password):
